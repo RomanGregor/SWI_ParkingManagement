@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import cz.swi.parking.domain.AppUser;
 import cz.swi.parking.domain.ParkingSpot;
 import cz.swi.parking.domain.SpotType;
 import cz.swi.parking.domain.VehicleType;
 import cz.swi.parking.domain.exception.InvalidReservationWindowException;
 import cz.swi.parking.repo.ParkingSpotRepository;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -36,13 +38,13 @@ class AvailabilityServiceTest {
 
         AvailabilityService service = new AvailabilityService(spots);
 
-        assertThat(service.findFree(FROM, TO, null, VehicleType.COMBUSTION))
+        assertThat(service.findFree(FROM, TO, null, VehicleType.COMBUSTION, null))
                 .containsExactly(standard);
-        assertThat(service.findFree(FROM, TO, null, VehicleType.ELECTRIC))
+        assertThat(service.findFree(FROM, TO, null, VehicleType.ELECTRIC, null))
                 .containsExactly(standard, charging);
-        assertThat(service.findFree(FROM, TO, null, VehicleType.MOTORCYCLE))
+        assertThat(service.findFree(FROM, TO, null, VehicleType.MOTORCYCLE, null))
                 .containsExactly(motorcycle);
-        assertThat(service.findFree(FROM, TO, null, null))
+        assertThat(service.findFree(FROM, TO, null, null, null))
                 .containsExactly(standard, charging, motorcycle);
     }
 
@@ -50,7 +52,7 @@ class AvailabilityServiceTest {
     void rejectsABackwardsWindow() {
         AvailabilityService service = new AvailabilityService(spots);
 
-        assertThatThrownBy(() -> service.findFree(TO, FROM, null, null))
+        assertThatThrownBy(() -> service.findFree(TO, FROM, null, null, null))
                 .isInstanceOf(InvalidReservationWindowException.class);
     }
 
@@ -61,6 +63,26 @@ class AvailabilityServiceTest {
 
         AvailabilityService service = new AvailabilityService(spots);
 
-        assertThat(service.findFree(FROM, TO, SpotType.EV_CHARGING, null)).containsExactly(charging);
+        assertThat(service.findFree(FROM, TO, SpotType.EV_CHARGING, null, null)).containsExactly(charging);
+    }
+
+    @Test
+    void hidesAccessibleSpotsFromDriversWithoutAValidPermit() {
+        ParkingSpot standard = ParkingSpot.create("P1-A01", "P1", SpotType.STANDARD);
+        ParkingSpot accessible = ParkingSpot.create("P1-H01", "P1", SpotType.ACCESSIBLE);
+        when(spots.findFreeSpots(FROM, TO)).thenReturn(List.of(standard, accessible));
+
+        AvailabilityService service = new AvailabilityService(spots);
+        AppUser withoutPermit = AppUser.driver("driver@example.edu", "Demo Driver");
+        AppUser withPermit = AppUser.driver("permit@example.edu", "Permit Holder");
+        withPermit.grantAccessibilityPermit(LocalDate.of(2030, 12, 31));
+        AppUser expired = AppUser.driver("expired@example.edu", "Expired Permit");
+        expired.grantAccessibilityPermit(FROM.toLocalDate().minusDays(1));
+
+        assertThat(service.findFree(FROM, TO, null, null, withoutPermit)).containsExactly(standard);
+        assertThat(service.findFree(FROM, TO, null, null, expired)).containsExactly(standard);
+        assertThat(service.findFree(FROM, TO, null, null, withPermit)).containsExactly(standard, accessible);
+        // No driver given: we cannot judge the permit, so we do not hide anything.
+        assertThat(service.findFree(FROM, TO, null, null, null)).containsExactly(standard, accessible);
     }
 }
