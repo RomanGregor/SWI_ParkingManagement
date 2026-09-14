@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: park-reservation
+
+  datasource:
+    url: ${PARK_DB_URL:jdbc:postgresql://localhost:55432/parkdb}
+    username: ${PARK_DB_USER:park}
+    password: ${PARK_DB_PASSWORD:park}
+
+  jpa:
+    hibernate:
+      # Flyway owns the schema. Hibernate only checks that the mapping matches it.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+parking:
+  notifications:
+    # log = local stub (default), http = real Notification Service
+    mode: ${PARK_NOTIFICATIONS_MODE:log}
+    base-url: ${PARK_NOTIFICATIONS_URL:http://localhost:9090}
+    connect-timeout: 2s
+    read-timeout: 3s
+
+logging:
+  level:
+    cz.swi.parking: INFO
+
+server:
+  port: ${PARK_PORT:8080}
