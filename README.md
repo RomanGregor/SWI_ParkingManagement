@@ -122,13 +122,39 @@ git clone <TODO_REPO_URL> && cd park-reservation
 ./mvnw test               # unit tests only, no database needed
 
 ./scripts/db-up.sh        # PostgreSQL 16 on localhost:55432 (db parkdb, user/password park/park)
-./mvnw spring-boot:run    # Flyway creates the schema and seeds demo data; API on :8080
+./mvnw spring-boot:run    # Flyway creates the schema and seeds demo data
+                          # web UI on http://localhost:8080, API under /api
 ./scripts/db-down.sh      # when you are done
 ```
 
 Configuration is overridable by environment variable: `PARK_DB_URL`, `PARK_DB_USER`,
 `PARK_DB_PASSWORD`, `PARK_PORT`, `PARK_NOTIFICATIONS_MODE` (`log` or `http`),
 `PARK_NOTIFICATIONS_URL`.
+
+## Web UI
+
+Open **http://localhost:8080** once the application is running. It is a single static page
+(`src/main/resources/static/index.html`, no build step, no framework) served from the same origin as
+the API it calls.
+
+The page is a plan view of level P1. Pick a time window, a vehicle type and who you are, and every
+spot is colour-coded:
+
+| Colour | Meaning |
+|---|---|
+| green | free for this window **and** legal for your vehicle and permit — click it to book |
+| amber | free, but the compatibility rule would refuse you (`wrong vehicle`, `permit required`) |
+| red | already held by a confirmed reservation |
+| grey | out of service |
+
+Clicking a green spot creates a **DRAFT**, which holds nothing. It appears on the right with a
+**Confirm** button — pressing it is the `DRAFT → CONFIRMED` transition, and the moment the
+no-overlap rule is enforced. Rejections surface as a toast naming the rule that refused
+(`NO_OVERLAP`, `SPOT_VEHICLE_COMPATIBILITY`), so both business rules are visible without reading a
+log.
+
+Switching the driver between *Demo Driver* and *Permit Holder* is the quickest way to see the
+domain-specific rule work: the accessible spot `P1-H01` turns from amber to green.
 
 ## Trying the API
 
@@ -167,6 +193,7 @@ curl -s -X POST "http://localhost:8080/api/reservations/$RESERVATION_ID/cancel" 
 | `GET` | `/api/reservations?userId=...` | a driver's reservations |
 | `GET` | `/api/availability?from=&to=[&spotType=][&vehicleType=][&userId=]` | **check availability** |
 | `GET` | `/api/spots` | every spot in the car park |
+| `GET` | `/api/users` | the people who can hold reservations (the UI's driver picker) |
 
 Failures are reported as `400` (malformed request), `404` (unknown id) or `409` (a business rule
 said no, with the rule name in the `rule` field).
@@ -203,6 +230,7 @@ src/main/java/cz/swi/parking/
   service/       the four core operations
   notification/  the external boundary and its stub
   web/           REST controllers, DTOs, error handling
+src/main/resources/static/        index.html - the web UI, one self-contained file
 src/main/resources/db/migration/  Flyway schema and demo seed
 src/test/java/cz/swi/parking/
   domain/, service/  unit tests, no infrastructure

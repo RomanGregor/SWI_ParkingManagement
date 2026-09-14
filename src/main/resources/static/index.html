@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 · Car park</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f0f2f5;
+    --border: #e2e5ea;
+    --text: #14171c;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-soft: #e8effd;
+    --ok: #15803d;
+    --ok-soft: #e6f4ea;
+    --warn: #b45309;
+    --warn-soft: #fdf1e1;
+    --danger: #b91c1c;
+    --danger-soft: #fdeaea;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 16px rgba(16,24,40,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d0f13;
+      --surface: #15181e;
+      --surface-2: #1b1f27;
+      --border: #262b35;
+      --text: #e8eaed;
+      --muted: #8b93a1;
+      --accent: #5b8cff;
+      --accent-soft: #1a2338;
+      --ok: #4ade80;
+      --ok-soft: #13291c;
+      --warn: #fbbf24;
+      --warn-soft: #2a2112;
+      --danger: #f87171;
+      --danger-soft: #2c1618;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- header ---------- */
+  .top {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark {
+    display: grid; place-items: center;
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--accent); color: #fff;
+    font-weight: 700; letter-spacing: .5px; font-size: 14px;
+  }
+  .brand h1 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
+  .brand .sub { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .who { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+
+  /* ---------- controls ---------- */
+  main { max-width: 1180px; margin: 0 auto; padding: 22px 24px 60px; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .search { padding: 16px; display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .search .fields { display: flex; gap: 14px; flex-wrap: wrap; flex: 1 1 auto; }
+  label.field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+  input, select {
+    font: inherit; font-size: 14px;
+    color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 9px;
+    padding: 8px 10px; min-width: 150px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button {
+    font: inherit; font-size: 14px; font-weight: 550;
+    border-radius: 9px; border: 1px solid transparent;
+    padding: 9px 16px; cursor: pointer;
+    transition: filter .15s, background .15s;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.07); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .primary { background: var(--accent); color: #fff; }
+  .ghost { background: transparent; color: var(--muted); border-color: var(--border); }
+  .tiny { padding: 5px 11px; font-size: 13px; }
+
+  /* ---------- layout ---------- */
+  .columns { display: grid; grid-template-columns: 1.55fr 1fr; gap: 18px; margin-top: 18px; align-items: start; }
+  @media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .panel-head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+
+  /* ---------- parking grid ---------- */
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+    gap: 10px; padding: 16px;
+  }
+  .spot {
+    position: relative; display: flex; flex-direction: column; gap: 8px;
+    align-items: flex-start; text-align: left;
+    padding: 12px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--text);
+  }
+  .spot .code { font-weight: 600; font-size: 14.5px; letter-spacing: -.01em; }
+  .spot .state { font-size: 11.5px; color: var(--muted); }
+  .spot .tag {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    padding: 2px 6px; border-radius: 5px;
+    background: var(--border); color: var(--muted);
+  }
+  .spot.free { border-color: var(--ok); background: var(--ok-soft); cursor: pointer; }
+  .spot.free .state { color: var(--ok); font-weight: 600; }
+  .spot.free:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .spot.blocked, .spot.taken, .spot.mismatch { cursor: not-allowed; opacity: .62; }
+  .spot.mismatch { border-style: dashed; }
+  .spot.taken .state { color: var(--danger); }
+  .spot.mismatch .state { color: var(--warn); }
+  .row-label { grid-column: 1 / -1; font-size: 11px; letter-spacing: .08em; color: var(--muted); margin-top: 4px; font-weight: 600; }
+  .legend { display: flex; gap: 12px; font-size: 11.5px; color: var(--muted); flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+  .hint { margin: 0; padding: 0 16px 16px; font-size: 12.5px; color: var(--muted); }
+
+  /* ---------- reservations ---------- */
+  .list { padding: 10px; display: flex; flex-direction: column; gap: 10px; max-height: 620px; overflow-y: auto; }
+  .card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface-2); }
+  .card .line1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card .spotcode { font-weight: 600; }
+  .card .meta { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .card .actions { display: flex; gap: 8px; margin-top: 10px; }
+  .pill { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; padding: 3px 8px; border-radius: 20px; }
+  .pill.DRAFT { background: var(--border); color: var(--muted); }
+  .pill.CONFIRMED { background: var(--ok-soft); color: var(--ok); }
+  .pill.CANCELLED { background: var(--danger-soft); color: var(--danger); }
+  .pill.COMPLETED { background: var(--accent-soft); color: var(--accent); }
+  .empty { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  /* ---------- toasts ---------- */
+  .toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 10px; z-index: 50; max-width: 380px; }
+  .toast {
+    border: 1px solid var(--border); border-left-width: 3px;
+    border-radius: 10px; padding: 11px 14px; background: var(--surface);
+    box-shadow: var(--shadow); animation: slide .22s ease-out;
+  }
+  .toast strong { display: block; font-size: 13px; margin-bottom: 2px; }
+  .toast span { font-size: 12.5px; color: var(--muted); }
+  .toast.ok { border-left-color: var(--ok); }
+  .toast.ok strong { color: var(--ok); }
+  .toast.rule { border-left-color: var(--warn); }
+  .toast.rule strong { color: var(--warn); }
+  .toast.error { border-left-color: var(--danger); }
+  .toast.error strong { color: var(--danger); }
+  @keyframes slide { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="mark">P1</span>
+    <div>
+      <h1>Car park</h1>
+      <p class="sub">Reservation system</p>
+    </div>
+  </div>
+  <label class="who">Signed in as <select id="user"></select></label>
+</header>
+
+<main>
+  <section class="panel search">
+    <div class="fields">
+      <label class="field">From<input type="datetime-local" id="from"></label>
+      <label class="field">Until<input type="datetime-local" id="to"></label>
+      <label class="field">Vehicle
+        <select id="vehicleType">
+          <option value="COMBUSTION">Combustion car</option>
+          <option value="ELECTRIC">Electric car</option>
+          <option value="MOTORCYCLE">Motorcycle</option>
+        </select>
+      </label>
+      <label class="field">Licence plate<input id="plate" value="1AB 2345" maxlength="16"></label>
+    </div>
+    <button id="search" class="primary">Find free spots</button>
+  </section>
+
+  <div class="columns">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Level P1</h2>
+        <div class="legend">
+          <span><i style="background:var(--ok)"></i>available</span>
+          <span><i style="background:var(--warn)"></i>wrong vehicle / no permit</span>
+          <span><i style="background:var(--danger)"></i>reserved</span>
+          <span><i style="background:var(--border)"></i>out of service</span>
+        </div>
+      </div>
+      <div id="grid" class="grid"></div>
+      <p class="hint" id="lotHint">Pick a window and press <b>Find free spots</b>.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Your reservations</h2>
+        <button id="refresh" class="ghost tiny">Refresh</button>
+      </div>
+      <div id="reservations" class="list"></div>
+    </section>
+  </div>
+</main>
+
+<div id="toasts" class="toasts"></div>
+
+<script>
+"use strict";
+
+const state = { spots: [], users: [], reservations: [], freeForMe: new Set(), freeForAnyone: new Set(), searched: false };
+
+const $ = (id) => document.getElementById(id);
+const TYPE_LABEL = { STANDARD: "STD", EV_CHARGING: "EV", ACCESSIBLE: "ACC", MOTORCYCLE: "MOTO" };
+const TYPE_ORDER = ["STANDARD", "EV_CHARGING", "ACCESSIBLE", "MOTORCYCLE"];
+const TYPE_TITLE = {
+  STANDARD: "Standard", EV_CHARGING: "EV charging",
+  ACCESSIBLE: "Accessible", MOTORCYCLE: "Motorcycle"
+};
+
+/* ---------------- api ---------------- */
+
+async function api(path, options) {
+  const res = await fetch(path, options);
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    const err = new Error((body && body.message) || res.statusText);
+    err.status = res.status;
+    err.rule = body && body.rule;
+    err.details = (body && body.details) || [];
+    throw err;
+  }
+  return body;
+}
+
+const post = (path, payload) => api(path, {
+  method: "POST",
+  headers: payload ? { "Content-Type": "application/json" } : {},
+  body: payload ? JSON.stringify(payload) : undefined
+});
+
+/* ---------------- helpers ---------------- */
+
+function pad(n) { return String(n).padStart(2, "0"); }
+
+function toInputValue(date) {
+  return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate())
+    + "T" + pad(date.getHours()) + ":" + pad(date.getMinutes());
+}
+
+function windowIso() {
+  const from = $("from").value, to = $("to").value;
+  if (!from || !to) return null;
+  return { from: new Date(from).toISOString(), to: new Date(to).toISOString() };
+}
+
+function formatRange(startsAt, endsAt) {
+  const s = new Date(startsAt), e = new Date(endsAt);
+  const day = s.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  const time = (d) => d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return day + " · " + time(s) + " – " + time(e);
+}
+
+function toast(kind, title, message) {
+  const el = document.createElement("div");
+  el.className = "toast " + kind;
+  el.innerHTML = "<strong></strong><span></span>";
+  el.querySelector("strong").textContent = title;
+  el.querySelector("span").textContent = message || "";
+  $("toasts").appendChild(el);
+  setTimeout(() => el.remove(), kind === "ok" ? 3500 : 6000);
+}
+
+function reportFailure(e) {
+  if (e.rule && e.status === 409) {
+    toast("rule", "Rejected: " + e.rule, e.message);
+  } else if (e.rule === "VALIDATION") {
+    toast("error", "Invalid request", e.details.join(", ") || e.message);
+  } else {
+    toast("error", "Request failed", e.message);
+  }
+}
+
+/* ---------------- rendering ---------------- */
+
+function renderGrid() {
+  const grid = $("grid");
+  grid.innerHTML = "";
+  if (!state.spots.length) return;
+
+  for (const type of TYPE_ORDER) {
+    const ofType = state.spots.filter((s) => s.type === type);
+    if (!ofType.length) continue;
+
+    const heading = document.createElement("div");
+    heading.className = "row-label";
+    heading.textContent = TYPE_TITLE[type].toUpperCase();
+    grid.appendChild(heading);
+
+    for (const spot of ofType) grid.appendChild(renderSpot(spot));
+  }
+}
+
+function renderSpot(spot) {
+  const el = document.createElement("button");
+  let cls = "spot", state_text = "—";
+  if (spot.status === "OUT_OF_SERVICE") {
+    cls += " blocked"; state_text = "out of service";
+  } else if (!state.searched) {
+    state_text = "search a window";
+  } else if (state.freeForMe.has(spot.id)) {
+    cls += " free"; state_text = "available";
+  } else if (state.freeForAnyone.has(spot.id)) {
+    cls += " mismatch";
+    state_text = spot.type === "ACCESSIBLE" ? "permit required" : "wrong vehicle";
+  } else {
+    cls += " taken"; state_text = "reserved";
+  }
+
+  el.className = cls;
+  el.type = "button";
+  el.innerHTML = '<span class="tag"></span><span class="code"></span><span class="state"></span>';
+  el.querySelector(".tag").textContent = TYPE_LABEL[spot.type];
+  el.querySelector(".code").textContent = spot.code;
+  el.querySelector(".state").textContent = state_text;
+  el.disabled = !cls.includes("free");
+  if (!el.disabled) el.addEventListener("click", () => book(spot));
+  return el;
+}
+
+function renderReservations() {
+  const box = $("reservations");
+  box.innerHTML = "";
+  if (!state.reservations.length) {
+    box.innerHTML = '<p class="empty">No reservations yet.<br>Pick a green spot to create one.</p>';
+    return;
+  }
+  for (const r of state.reservations) box.appendChild(renderReservation(r));
+}
+
+function renderReservation(r) {
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const line1 = document.createElement("div");
+  line1.className = "line1";
+  const code = document.createElement("span");
+  code.className = "spotcode";
+  code.textContent = r.spotCode;
+  const pill = document.createElement("span");
+  pill.className = "pill " + r.status;
+  pill.textContent = r.status;
+  line1.append(code, pill);
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.textContent = formatRange(r.startsAt, r.endsAt) + " · " + r.vehiclePlate + " · " + r.vehicleType.toLowerCase();
+
+  card.append(line1, meta);
+
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  if (r.status === "DRAFT") {
+    actions.appendChild(action("Confirm", "primary", () => transition(r.id, "confirm", "Reservation confirmed")));
+  }
+  if (r.status === "DRAFT" || r.status === "CONFIRMED") {
+    actions.appendChild(action("Cancel", "ghost", () => transition(r.id, "cancel", "Reservation cancelled")));
+  }
+  if (actions.children.length) card.appendChild(actions);
+  return card;
+}
+
+function action(text, cls, onClick) {
+  const b = document.createElement("button");
+  b.className = cls + " tiny";
+  b.textContent = text;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+/* ---------------- operations ---------------- */
+
+async function search() {
+  const win = windowIso();
+  if (!win) return toast("error", "Pick a window", "Both From and Until are required.");
+
+  const userId = $("user").value;
+  const vehicleType = $("vehicleType").value;
+  const base = "/api/availability?from=" + encodeURIComponent(win.from) + "&to=" + encodeURIComponent(win.to);
+
+  try {
+    const [anyone, mine] = await Promise.all([
+      api(base),
+      api(base + "&vehicleType=" + vehicleType + "&userId=" + userId)
+    ]);
+    state.searched = true;
+    state.freeForAnyone = new Set(anyone.map((s) => s.id));
+    state.freeForMe = new Set(mine.map((s) => s.id));
+    renderGrid();
+    const hidden = anyone.length - mine.length;
+    $("lotHint").innerHTML = mine.length + " of " + state.spots.length + " spots available for this vehicle"
+      + (hidden > 0 ? " · " + hidden + " free but not usable by you (spot/vehicle compatibility rule)" : "");
+  } catch (e) {
+    reportFailure(e);
+  }
+}
+
+async function book(spot) {
+  const win = windowIso();
+  if (!win) return toast("error", "Pick a window", "Both From and Until are required.");
+  const plate = $("plate").value.trim();
+  if (!plate) return toast("error", "Licence plate required", "");
+  try {
+    await post("/api/reservations", {
+      userId: $("user").value,
+      spotId: spot.id,
+      vehiclePlate: plate,
+      vehicleType: $("vehicleType").value,
+      startsAt: win.from,
+      endsAt: win.to
+    });
+    toast("ok", "Draft created for " + spot.code, "It holds nothing yet — press Confirm to take the spot.");
+    await loadReservations();
+  } catch (e) {
+    reportFailure(e);
+  }
+}
+
+async function transition(id, operation, successMessage) {
+  try {
+    const r = await post("/api/reservations/" + id + "/" + operation);
+    toast("ok", successMessage, r.spotCode + " · " + formatRange(r.startsAt, r.endsAt));
+    await Promise.all([loadReservations(), search()]);
+  } catch (e) {
+    reportFailure(e);
+  }
+}
+
+async function loadReservations() {
+  try {
+    state.reservations = await api("/api/reservations?userId=" + $("user").value);
+    renderReservations();
+  } catch (e) {
+    reportFailure(e);
+  }
+}
+
+/* ---------------- boot ---------------- */
+
+async function init() {
+  const start = new Date();
+  start.setDate(start.getDate() + 1);
+  start.setHours(8, 0, 0, 0);
+  const end = new Date(start.getTime() + 2 * 3600 * 1000);
+  $("from").value = toInputValue(start);
+  $("to").value = toInputValue(end);
+
+  try {
+    const [users, spots] = await Promise.all([api("/api/users"), api("/api/spots")]);
+    state.users = users;
+    state.spots = spots;
+  } catch (e) {
+    $("lotHint").textContent = "Cannot reach the API — is the application running?";
+    return reportFailure(e);
+  }
+
+  $("user").innerHTML = "";
+  for (const u of state.users) {
+    const o = document.createElement("option");
+    o.value = u.id;
+    o.textContent = u.fullName + (u.accessibilityPermitValidUntil ? " · permit" : "");
+    $("user").appendChild(o);
+  }
+  // Default to a driver: operators and admins do not book spots for themselves.
+  const firstDriver = state.users.find((u) => u.role === "DRIVER");
+  if (firstDriver) $("user").value = firstDriver.id;
+
+  renderGrid();
+  $("search").addEventListener("click", search);
+  $("refresh").addEventListener("click", loadReservations);
+  $("user").addEventListener("change", () => Promise.all([loadReservations(), search()]));
+  $("vehicleType").addEventListener("change", search);
+
+  await Promise.all([loadReservations(), search()]);
+}
+
+init();
+</script>
+</body>
+</html>

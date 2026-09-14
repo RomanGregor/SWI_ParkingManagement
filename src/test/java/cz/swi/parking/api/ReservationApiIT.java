@@ -122,6 +122,26 @@ class ReservationApiIT {
         assertThat(invalid.getBody().get("rule").asText()).isEqualTo("VALIDATION");
     }
 
+    @Test
+    @DisplayName("the web UI can list drivers and the whole car park")
+    void theUiCanLoadItsReferenceData() {
+        ResponseEntity<JsonNode> users = http.getForEntity("/api/users", JsonNode.class);
+        assertThat(users.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(users.getBody().findValuesAsText("email")).contains("driver@example.edu");
+        // The permit holder must come back with a permit date, or the UI cannot explain
+        // why an accessible spot is offered to one driver and not another.
+        assertThat(users.getBody().findValuesAsText("accessibilityPermitValidUntil")).contains("2030-12-31");
+
+        ResponseEntity<JsonNode> spots = http.getForEntity("/api/spots", JsonNode.class);
+        assertThat(spots.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(spots.getBody().findValuesAsText("code")).contains("P1-A01", "P1-E01", "P1-H01", "P1-M01");
+
+        // The UI itself is served from the same origin as the API it calls.
+        ResponseEntity<String> page = http.getForEntity("/", String.class);
+        assertThat(page.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(page.getBody()).contains("<title>P1 · Car park</title>");
+    }
+
     private ParkingSpot freshSpot() {
         return spots.save(ParkingSpot.create(
                 "IT-" + UUID.randomUUID().toString().substring(0, 8), "P1", SpotType.STANDARD));
