@@ -77,4 +77,25 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!-- `./mvnw -Pspike test` runs ONLY the persistence spike, which needs a live PostgreSQL.
+             Started for you by scripts/spike-persistence.sh -->
+        <profile>
+            <id>spike</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludes combine.self="override"/>
+                            <includes>
+                                <include>**/*SpikeIT.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
