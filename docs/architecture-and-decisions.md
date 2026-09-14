@@ -111,6 +111,23 @@ permit validity, completing only after the window) are then testable with a fixe
 `Thread.sleep`. The application runs on `Clock.systemUTC()`; instants are stored in UTC, and
 formatting to a local time zone is a presentation concern we have not needed yet.
 
+### D11 — `open-in-view` stays off, and reads fetch what they need
+
+Spring's open-session-in-view is disabled, so a transaction is closed before a controller turns an
+entity into a DTO. That is the behaviour we want — it keeps database access inside the service layer
+instead of letting it leak into serialization — but it has to be paid for: every read of a
+reservation declares an `@EntityGraph` over `spot` and `user`.
+
+We learned this the direct way. Without the graphs, `GET /api/reservations/{id}`, the by-driver list
+and `complete` returned HTTP 500 with `LazyInitializationException`, while `create`, `confirm` and
+`cancel` worked — those happen to touch the associations while the session is still open, so the
+bug was invisible from the operations we had been exercising. `ReservationApiIT` now walks the whole
+path over HTTP and asserts on `spotCode` in the response, which is exactly the field that used to
+blow up.
+
+The alternative — turning `open-in-view` back on — would have hidden the problem rather than fixed
+it, at the cost of unpredictable queries during serialization.
+
 ## Open points
 
 - **Authentication and authorisation.** Every endpoint currently trusts the `userId` it is given.

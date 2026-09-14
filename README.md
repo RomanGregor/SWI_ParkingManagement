@@ -29,7 +29,7 @@ POST /reservations
 → validate            (time window, spot exists and is in service, spot/vehicle compatibility)
 → persist             (INSERT into reservation in PostgreSQL, status = DRAFT)
 → return reservation ID  (HTTP 201, body { "id": ..., "status": "DRAFT" }, Location header)
-→ automated check     (ReservationPersistenceSpikeIT: create → read back from a real database → assert)
+→ automated check     (ReservationApiIT over real HTTP + ReservationPersistenceSpikeIT against a real database)
 ```
 
 Concretely, in this repository the skeleton is:
@@ -40,7 +40,7 @@ Concretely, in this repository the skeleton is:
 | validate | [`ReservationPolicy`](src/main/java/cz/swi/parking/domain/ReservationPolicy.java) + bean validation on [`CreateReservationRequest`](src/main/java/cz/swi/parking/web/dto/CreateReservationRequest.java) |
 | persist | [`ReservationService.create`](src/main/java/cz/swi/parking/service/ReservationService.java) → [`ReservationRepository`](src/main/java/cz/swi/parking/repo/ReservationRepository.java) → PostgreSQL, schema owned by [Flyway](src/main/resources/db/migration) |
 | return ID | `201 Created`, `Location: /api/reservations/{id}` |
-| automated check | [`ReservationPersistenceSpikeIT`](src/test/java/cz/swi/parking/spike/ReservationPersistenceSpikeIT.java), run by `./scripts/spike-persistence.sh` |
+| automated check | [`ReservationApiIT`](src/test/java/cz/swi/parking/api/ReservationApiIT.java) walks the path over HTTP; [`ReservationPersistenceSpikeIT`](src/test/java/cz/swi/parking/spike/ReservationPersistenceSpikeIT.java) proves the database round trip. Both run by `./scripts/integration-tests.sh` |
 
 Status after C01: every step above already runs. What is **not** finished is authentication, the
 scheduled DRAFT expiry, and the concurrency fix identified by the C01 spike
@@ -174,9 +174,13 @@ said no, with the rule name in the `rule` field).
 ## Tests
 
 ```bash
-./mvnw test                      # 36 unit tests, no infrastructure
-./scripts/spike-persistence.sh   # C01 spike: starts PostgreSQL, runs the persistence tests, writes evidence
+./mvnw test                      # 36 unit tests, no infrastructure needed
+./scripts/integration-tests.sh   # 8 integration tests against a real PostgreSQL (API + persistence spike)
+./scripts/spike-persistence.sh   # the C01 spike alone, capturing its output as evidence
 ```
+
+Tests that need a database are named `*IT` and are excluded from `./mvnw test`, so a teammate with
+no container runtime can still run the unit suite.
 
 `scripts/spike-persistence.sh` appends the full run to
 [`docs/evidence/spike-a-persistence-run.log`](docs/evidence/spike-a-persistence-run.log) and stops
@@ -192,7 +196,7 @@ docs/
   evidence-and-evolution.md       the C01 spike: question, what we did, result, decision
   reviews/C01-review.md           the review one member wrote before the change was integrated
   evidence/                       raw output of the spike run
-scripts/                          db-up.sh, db-down.sh, spike-persistence.sh
+scripts/                          db-up.sh, db-down.sh, integration-tests.sh, spike-persistence.sh
 src/main/java/cz/swi/parking/
   domain/        entities, the state machine and ReservationPolicy (rules, no framework)
   repo/          Spring Data repositories, including the overlap query
@@ -201,6 +205,7 @@ src/main/java/cz/swi/parking/
   web/           REST controllers, DTOs, error handling
 src/main/resources/db/migration/  Flyway schema and demo seed
 src/test/java/cz/swi/parking/
-  domain/, service/  unit tests
-  spike/             the C01 persistence spike (needs a real database)
+  domain/, service/  unit tests, no infrastructure
+  api/               ReservationApiIT - the walking skeleton over HTTP (needs a database)
+  spike/             the C01 persistence spike (needs a database)
 ```

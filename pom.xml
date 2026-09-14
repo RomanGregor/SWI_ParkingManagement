@@ -67,10 +67,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <!-- Default `mvn test` runs only fast unit tests (no database needed).
-                         Classes ending in *SpikeIT require a running PostgreSQL and are
-                         started explicitly by scripts/spike-persistence.sh -->
+                         Classes ending in *IT need a running PostgreSQL and are started
+                         explicitly by scripts/integration-tests.sh or spike-persistence.sh -->
                     <excludes>
-                        <exclude>**/*SpikeIT.java</exclude>
+                        <exclude>**/*IT.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -91,6 +91,26 @@
                             <excludes combine.self="override"/>
                             <includes>
                                 <include>**/*SpikeIT.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- `./mvnw -Pit test` runs every integration test, which all need a live PostgreSQL.
+             Started for you by scripts/integration-tests.sh -->
+        <profile>
+            <id>it</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludes combine.self="override"/>
+                            <includes>
+                                <include>**/*IT.java</include>
                             </includes>
                         </configuration>
                     </plugin>
