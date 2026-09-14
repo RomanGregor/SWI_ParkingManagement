@@ -9,14 +9,14 @@ they get actually fits their vehicle.
 > | Item | Value |
 > |---|---|
 > | Team name | `TODO_TEAM_NAME` |
-> | Member 1 | `TODO_MEMBER_1` (referred to as *Member A* in the docs and git history) |
-> | Member 2 | `TODO_MEMBER_2` (*Member B*) |
-> | Member 3 | `TODO_MEMBER_3` (*Member C*) |
-> | Repository URL | `TODO_REPO_URL` |
+> | Member 1 | Roman Gregor — commits authored as `RomanGregor` |
+> | Member 2 | `TODO_MEMBER_2` — commits authored as *Member B* (wrote the C01 spike) |
+> | Member 3 | `TODO_MEMBER_3` — commits authored as *Member C* (reviewed the C01 spike) |
+> | Repository URL | https://github.com/RomanGregor/SWI_Reservation |
 >
-> The git history was created with the placeholder identities `Member A/B/C`. After adding the real
-> names here, either leave the history as is and keep the mapping above, or rewrite the authors with
-> `git filter-branch` / `git rebase`.
+> Members 2 and 3 still carry the placeholder identities `Member B` / `Member C` in the git history.
+> Put their real names in this table when they join; rewriting the commit authors to match is
+> optional and described in the git history section below.
 
 ---
 
